@@ -30,9 +30,10 @@ def Crawl(output_folder):
                 s = requests.get("http://www.pixiv.net"+image_link,headers=headers)
                 broth = BeautifulSoup(s.text,'html.parser')
                 image_wrapper = broth.findAll("a",{"data-title":"registerImage"})
-                image = image_wrapper[0].findAll("img")[0]
+                if image_wrapper:
+                    image = image_wrapper[0].findAll("img")[0]
                 imgurl = image.get("src")
-                replaceChar = ["\\","/","|",":","*","?","<",">","\"","."]
+                replaceChar = ["\\","/","|",":","*","?","<",">","\"","."," "]
                 imgname = str(image.get("title"))
                 imgtype = str(imgurl).split(".")[len(str(imgurl).split("."))-1]
                 for char in replaceChar:
@@ -40,17 +41,17 @@ def Crawl(output_folder):
                 #contains the image data
 
                 file_name = output_folder+imgname+"."+imgtype
-                if not path.isfile(file_name):  # if file exists
-                    print("Downloading: ",imgname,".",imgtype)
-                    with open(file_name, 'wb') as handle:
-                        t = requests.get(imgurl,headers=headers,stream=True)
-                        if t.status_code == 200:
-                            for block in t.iter_content(1024):
-                                handle.write(block)
-                else:
-                    print("File exists: ",imgname,".",imgtype)
-                time.sleep(0.5)
-                yield file_name
-
-
-Crawl("./input/")
+                try:
+                    if not path.isfile(file_name):  # if file does not exist
+                        print("Downloading: ",imgname,".",imgtype,sep="")
+                        with open(file_name, 'wb') as handle:
+                            t = requests.get(imgurl,headers=headers,stream=True)
+                            if t.status_code == 200:
+                                for block in t.iter_content(1024):
+                                    handle.write(block)
+                                handle.close()
+                        yield file_name
+                    else:
+                        print("File exists: ",imgname,".",imgtype,sep="")
+                except OSError:
+                    print("error during processing file: "+file_name)
